@@ -258,7 +258,7 @@ class Traceroute(NetworkApplication):
                         break
                 finally:
                     mySocket.close()
-            print(" %d  %s (%s) %0.f ms    %0.f ms    %0.f ms" %(ttl, self.get_host_by_ip(addr[0]),addr[0], FIRST_DELAY, SECOND_DELAY, THIRD_DELAY))
+            print(" %d  %s %0.f ms  %0.f ms  %0.f ms" %(ttl, self.get_host_by_ip(addr[0]), FIRST_DELAY, SECOND_DELAY, THIRD_DELAY))
         pass
 
     def doOnePacket(self):
