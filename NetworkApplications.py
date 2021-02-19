@@ -292,8 +292,42 @@ class Traceroute(NetworkApplication):
 
 class WebServer(NetworkApplication):
 
-    def handleRequest(tcpSocket):
+    def handleRequest(self, tcpSocket):
         # 1. Receive request message from the client on connection socket
+        while True:
+            connection,addr = tcpSocket.accept()
+            req = connection.recv(1024).decode('utf-8')
+            stringList = req.split(' ')
+
+            func = stringList[0]
+            requestedFile = stringList[1]
+
+            print('Requesting:', requestedFile)
+
+            my_file = requestedFile.split('?')[0]
+            my_file = my_file.lstrip('/')
+            if my_file == '':
+                my_file = 'index.html' 
+
+            try:
+                file = open(my_file, 'rb')
+                output = file.read()
+
+                file.close()
+
+                header = 'HTTP/1.1 200 OK\n'
+
+                header += 'Content-Type: ' + 'text/html' + '\n\n'          ########################################
+            
+            except Exception as e: 
+                print("Error")
+                header = 'HTTP/1.1 404 Not Found\n\n'
+                output = '<html><body><center><h1> Not Found (404) </h1><p> Sample HTTP Server</p></center></body></html>'.encode('utf-8')
+
+            finalOutput = header.encode('utf-8')
+            finalOutput += output
+            connection.send(finalOutput)
+            connection.close()
         # 2. Extract the path of the requested object from the message (second part of the HTTP header)
         # 3. Read the corresponding file from disk
         # 4. Store in temporary buffer
@@ -303,12 +337,21 @@ class WebServer(NetworkApplication):
         pass
 
     def __init__(self, args):
-        print('Web Server starting on port: %i...' % (args.port))
-        print('Address at %s' % (socket.gethostbyname(args.hostname)))
+        HOST = '127.0.0.1'
+        PORT = 8080
+        print('Web Server starting on port: %i...' % (PORT))
+        print('Address at %s' % (socket.gethostbyname(HOST)))
 
         # 1. Create server socket
+        server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+
         # 2. Bind the server socket to server address and server port
+        server_socket.bind((HOST, PORT))
+
         # 3. Continuously listen for connections to server socket
+        server_socket.listen(1)
+        self.handleRequest(server_socket)
         # 4. When a connection is accepted, call handleRequest function, passing new connection socket (see https://docs.python.org/3/library/socket.html#socket.socket.accept)
         # 5. Close server socket
 
