@@ -344,7 +344,7 @@ class WebServer(NetworkApplication):
 
         # 1. Create server socket
         server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        #server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
         # 2. Bind the server socket to server address and server port
         server_socket.bind((HOST, PORT))
@@ -357,9 +357,86 @@ class WebServer(NetworkApplication):
 
 
 class Proxy(NetworkApplication):
+    
+    def doOneSocket(self):
+        Host = '127.0.0.1'
+        Port = 8080
+        try:
+            socket1 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            socket1.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            socket1.bind((Host, Port))
+            socket1.listen(1)
+        except Exception as e:
+            print("Unable to initialize socket")
+
+        while True:
+            conn, addr = socket1.accept()
+            data = conn.recv(1024).decode('utf-8')
+            self.connection_str(conn, data, addr)
+        socket1.close
+        pass
+
+    def connection_str(self, conn, data, destinaionAddress):
+        try:
+            line1 = data.split('\n')[0]
+            url = line1.split(' ')[1]
+
+            http = url.find("://")
+
+            if http == -1:
+                temp = url
+            else:
+                temp = url[(http+3):]
+            
+            port = temp.find(":")
+            server = temp.find("/")
+            if server == -1:
+                server = len(temp)
+            webserver = ""
+            port = -1
+            if (port == -1 or server < port):
+                port = 80
+                webserver = temp[:server]
+            else:
+                port = int((temp[(port+1):])[:server-port-1])
+                webserver = temp[:port]
+            data = bytes(data, 'utf-8')
+            self.proxy(webserver, port, conn, destinaionAddress, data)
+        except Exception as e:
+            pass
+
+    def proxy(self, server, port, conn, addr, data):
+        Host = '127.0.0.1'
+        Port = 8080
+        try:
+            p = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            p.connect((Host,Port))
+            p.send(data)
+
+            while True:
+                #echo = p.recv(1024)
+                if(len(data) >  0):
+                    conn.send(data)
+
+                    line = float(len(data))
+                    line = float(line / 1024)
+                    line = "%.4s" % (str(line))
+                    line = "%s KB" % (line)
+                    print ("Requested : %s => %s <=" % (str(addr[0]), str(line)))
+                
+                else:
+                    break
+            p.close()
+            conn.close()
+
+        except socket.error:
+            p.close()
+            conn.close()
+
 
     def __init__(self, args):
         print('Web Proxy starting on port: %i...' % (args.port))
+        self.doOneSocket()
 
 
 if __name__ == "__main__":
