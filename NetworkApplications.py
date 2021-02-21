@@ -46,7 +46,7 @@ def setupArgumentParser() -> argparse.Namespace:
         parser_w.set_defaults(func=WebServer)
 
         parser_x = subparsers.add_parser('proxy', aliases=['x'], help='run proxy')      #proxy
-        parser_x.set_defaults(port=8000)
+        parser_x.set_defaults(port=8080)
         parser_x.add_argument('--port', '-p', type=int, nargs='?',
                               help='port number to start web server listening on')
         parser_x.set_defaults(func=Proxy)
@@ -359,6 +359,7 @@ class WebServer(NetworkApplication):
 class Proxy(NetworkApplication):
     
     def doOneSocket(self):
+        proxyAddr = socket.gethostbyname('neverssl.com') 
         Host = '127.0.0.1'
         Port = 8080
         try:
